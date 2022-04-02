@@ -7,7 +7,7 @@ pipeline{
     stage('Initiations'){
       steps{
             sh "echo clonning the latest version of the code" 
-            git branch: 'master', credentialsId:'d24beb31-e2f4-4193-ad15-d18bb2c46588', url: 'https://github.com/dominion-systems/webapp'
+            git branch: 'master', credentialsId: 'Git-Cred', url: 'https://github.com/dominion-systems/webapp'
             sh "echo clonning successful"
       }
     }
