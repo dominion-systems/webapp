@@ -7,7 +7,7 @@ pipeline{
     stage('Git Clone'){
       steps{
             sh "echo clonning the latest version of the code" 
-            sh "git branch: 'master', credentialsId: 'Git-Cred', url: 'https://github.com/dominion-systems/webapp'"
+            git branch: 'master', credentialsId: 'Git-Cred', url: 'https://github.com/dominion-systems/webapp'
             sh "echo clonning successful"
       }
     }
@@ -15,7 +15,7 @@ pipeline{
       steps{
        //First we remove any previous report with same name with the rm cmd
        sh "sudo rm tufflehog_report || true"
-       sh "docker run gesellix/tufflehog --json https://github.com/dominion-systems/webapp >tufflehog_report"
+       sh "sudo docker run gesellix/tufflehog --json https://github.com/dominion-systems/webapp >tufflehog_report"
        sh "cat tufflehog_report"
       }
     }
