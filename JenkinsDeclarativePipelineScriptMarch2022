@@ -4,21 +4,29 @@ pipeline{
     maven "maven3.8.4"
   }
   stages{
-    stage('1.clone'){
+    stage('Initiations'){
       steps{
             sh "echo clonning the latest version of the code" 
-            git branch: 'feature', credentialsId: 'Git_Credentials', url: 'https://github.com/LandmakTechnology/paypal-web-app'
+            git branch: 'feature', credentialsId: 'Git_Credentials', url: 'https://github.com/dominion-systems/webapp.git'
             sh "echo clonning successful"
       }
     }
-    stage('2.Build'){
+    stage('Check Git Secret') {
+      steps{
+       //First we remove any previous report with same name with the rm cmd
+       sh "sudo rm tufflehog_report || true"
+       sh "docker run gesellix/tufflehog --json (repo_url) >tufflehog_report"
+       sh "cat tufflehog_report"
+      }
+    }
+    stage('Build'){
       steps{
         sh "echo validation, compilation, testing and package"
         sh "echo testing successful and ready to package"
         sh "mvn clean package"
       }
     }
-    stage('3.Quality'){
+    stage('Quality'){
       steps{
         sh "echo performing code quality analysis"
         sh "echo code quality successful and ready to upload"
@@ -30,22 +38,22 @@ pipeline{
         sh "mvn deploy"
       }
     }
-  stage('5.Deploy2UAT'){
+  stage('Deploy2UAT'){
       steps{
         sh "echo DEPLOYING TO UAT for further testing and validation"
         sshagent(['agentcredentials']) {
-        sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@172.31.89.218:/opt/tomcat9/webapps/uatapp.war"
+        sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@172.31.90.250:/opt/tomcat9/webapps/uatapp.war"
       }
     }
   }
-      stage('6.Deploy2Prod'){
+      stage('Deploy2Prod'){
       steps{
         sh "echo DEPLOYING application TO Production"
         timeout(time:8, unit:'HOURS'){
         input message: 'Please approve deployment to Production'
       }
         sshagent(['agentcredentials']) {
-        sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@172.31.89.218:/opt/tomcat9/webapps/app.war"
+        sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@172.31.90.250:/opt/tomcat9/webapps/app.war"
       }
     }
   }
