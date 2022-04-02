@@ -4,7 +4,7 @@ pipeline{
     maven "maven-3.8.4"
   }
   stages{
-    stage('Initiations'){
+    stage('Git Clone'){
       steps{
             sh "echo clonning the latest version of the code" 
             git branch: 'master', credentialsId: 'Git-Cred', url: 'https://github.com/dominion-systems/webapp'
@@ -33,7 +33,7 @@ pipeline{
         sh "mvn sonar:sonar"
       }
     }
-  stage('4.uploadArtifacts'){
+  stage('UploadArtifacts'){
       steps{
         sh "mvn deploy"
       }
