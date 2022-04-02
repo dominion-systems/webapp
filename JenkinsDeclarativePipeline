@@ -1,13 +1,13 @@
 pipeline{
   agent any 
   tools{
-    maven "maven3.8.4"
+    maven "maven-3.8.4"
   }
   stages{
     stage('Initiations'){
       steps{
             sh "echo clonning the latest version of the code" 
-            git branch: 'feature', credentialsId: 'Git_Credentials', url: 'https://github.com/dominion-systems/webapp.git'
+            git branch: 'master', credentialsId:'d24beb31-e2f4-4193-ad15-d18bb2c46588', url: 'https://github.com/dominion-systems/webapp'
             sh "echo clonning successful"
       }
     }
