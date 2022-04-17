@@ -1,0 +1,97 @@
+pipeline{
+  agent any 
+  tools{
+    maven "maven-3.8.4"
+  }
+  stages{
+    stage('Git Clone'){
+      steps{
+            sh "echo clonning the latest version of the code" 
+            git branch: 'master', credentialsId: 'Git-Cred', url: 'https://github.com/dominion-systems/webapp'
+            sh "echo clonning successful"
+      }
+    }
+    stage('Check Git Secret') {
+      steps{
+       //First we remove any previous report with same name with the rm cmd
+       sh "rm trufflehog_report || true"
+       sh "sudo docker run gesellix/trufflehog --json https://github.com/dominion-systems/webapp > trufflehog_report || true"
+       sh "cat trufflehog_report"
+      }
+    }
+      stage('Owasp Dependency-check') {
+      steps{
+     	//remove any previous script with same name
+	    //sh "rm owasp-dependency-check.sh || true"
+	    //download the script from the repo to your workspace
+	    //sh "wget https://raw.githubusercontent.com/dominion-systems/webapp/master/owasp-dependency-check.sh"
+	    //Change the permision of the file
+	    sh "sudo chmod +x owasp-dependency-check.sh"
+	    //run the script
+	    //sh "sudo bash owasp-dependency-check.sh"
+	    sh "mvn dependency-check:check"
+      }
+    }
+    stage('Build'){
+      steps{
+        sh "echo validation, compilation, testing and package"
+        sh "echo testing successful and ready to package"
+        sh "mvn clean package"
+      }
+    }
+    stage('Quality'){
+      steps{
+        sh "echo performing code quality analysis"
+        sh "mvn sonar:sonar"
+        sh "echo code quality successful and ready to upload"
+      }
+    }
+
+//  stage('UploadArtifacts'){
+  //    steps{
+    //    sh "mvn deploy"
+      //}
+    //}
+  stage('Deploy2UAT'){
+      steps{
+        sh "echo DEPLOYING TO UAT for further testing and validation"
+        sshagent(['ssh-key']) {
+        sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@172.31.90.250:/opt/tomcat9/webapps/uatappnew.war"
+      }
+    }
+  }
+      stage('Deploy2Prod'){
+      steps{
+        sh "echo DEPLOYING application TO Production"
+        timeout(time:8, unit:'HOURS'){
+        input message: 'Please approve deployment to Production'
+      }
+        sshagent(['ssh-key']) {
+        sh "scp -o StrictHostKeyChecking=no target/*.war ec2-user@172.31.90.250:/opt/tomcat9/webapps/newapp.war"
+      }
+    }
+  }
+  
+      stage('DAST'){
+        steps{
+            sh "echo running owasp zap test"
+            sshagent(['ssh-key']){
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@52.91.99.44 "sudo docker run -t owasp/zap2docker-stable zap-baseline.py -t http://44.204.75.51:7000/app/ ||true" '
+      }
+    }
+  }
+  }
+    post{
+    always{
+      emailext body: 'The built has succeeded', recipientProviders: [buildUser(), developers()], subject: 'Build Success', to: 'cornewool@gmail.com'
+
+    }
+    success{
+      emailext body: 'The built has succeeded', recipientProviders: [buildUser(), developers()], subject: 'Build Succeed', to: 'cornewool@gmail.com'
+    }
+    failure{
+     emailext body: 'The built has failed', recipientProviders: [buildUser(), developers()], subject: 'Build failed', to: 'cornewool@gmail.com'
+    }
+  }
+
+}
